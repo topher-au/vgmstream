@@ -746,11 +746,13 @@ typedef struct {
     meta_t meta_type;       /* how we know the metadata */
 
     /* subsongs */
-    int num_streams;        /* for multi-stream formats (0=not set/one stream, 1=one stream) */
-    int stream_index;       /* selected stream (also 1-based) */
+    int num_streams;            /* for multi-stream formats (0=not set/one stream, 1=one stream) */
+    int stream_index;           /* selected stream (also 1-based) */
     char stream_name[STREAM_NAME_SIZE]; /* name of the current stream (info), if the file stores it and it's filled */
-    size_t stream_size;     /* info to properly calculate bitrate */
-    uint32_t channel_mask;  /* to silence crossfading subsongs/layers */
+    size_t stream_size;         /* info to properly calculate bitrate */
+    uint32_t channel_mask;      /* to silence crossfading subsongs/layers */
+    int8_t set_sources;           /* override output sources */
+    int8_t channel_sources[32];   /* channel duplication sources */
 
     /* looping */
     int loop_flag;              /* is this stream looped? */

@@ -953,6 +953,21 @@ void render_vgmstream(sample * buffer, int32_t sample_count, VGMSTREAM * vgmstre
             break;
     }
 
+    /* Copy source channels if set */
+    if(vgmstream->set_sources) {
+        int ch,s,source;
+        for (s = 0; s < sample_count; s++) {
+            for (ch = 0; ch < vgmstream->channels; ch++) {
+                source = vgmstream->channel_sources[ch];
+                if(source == 0){
+                    buffer[s*vgmstream->channels + ch] = 0;
+                    continue;
+                }
+                
+                buffer[s*vgmstream->channels + ch] = buffer[s*vgmstream->channels + source - 1];
+            }
+        }
+    }
 
     /* channel bitmask to silence non-set channels (up to 32)
      * can be used for 'crossfading subsongs' or layered channels, where a set of channels make a song section */

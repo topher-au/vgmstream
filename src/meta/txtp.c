@@ -9,6 +9,8 @@ typedef struct {
     char filename[TXT_LINE_MAX];
     int subsong;
     uint32_t channel_mask;
+    int8_t set_sources;
+    int8_t channel_sources[32];
 } txtp_entry;
 
 typedef struct {
@@ -59,6 +61,10 @@ VGMSTREAM * init_vgmstream_txtp(STREAMFILE *streamFile) {
         if (!vgmstream) goto fail;
 
         vgmstream->channel_mask = txtp->entry[0].channel_mask;
+        vgmstream->set_sources = txtp->entry[0].set_sources;
+        if(txtp->entry[0].set_sources)
+            for(int i=0; i<32; i++)
+                vgmstream->channel_sources[i] = txtp->entry[0].channel_sources[i];
     }
     else if (txtp->is_layered) {
         /* layered multi file */
@@ -103,6 +109,11 @@ VGMSTREAM * init_vgmstream_txtp(STREAMFILE *streamFile) {
 
         vgmstream->channel_mask = txtp->entry[0].channel_mask;
 
+        vgmstream->set_sources = txtp->entry[0].set_sources;
+        if(txtp->entry[0].set_sources)
+            for(int i=0; i<32; i++)
+                vgmstream->channel_sources[i] = txtp->entry[0].channel_sources[i];
+                
         vgmstream->layout_data = data_l;
     }
     else {
@@ -186,6 +197,8 @@ fail:
 static int add_filename(txtp_header * txtp, char *filename) {
     int i;
     uint32_t channel_mask = 0;
+    int8_t set_sources = 0;
+    int8_t sources[32];
     size_t range_start, range_end;
 
     //;VGM_LOG("TXTP: filename=%s\n", filename);
@@ -232,9 +245,26 @@ static int add_filename(txtp_header * txtp, char *filename) {
                     };
                     break;
                 }
-                case 'd':
+                case 's':
                 {
-                    /* duplicate channels */
+                    /* set output channel sources */
+                    set_sources=1;
+                    int n, ch;
+                    config++;
+                    int index = 0;
+                    while (sscanf(config, "%d%n", &ch,&n) == 1) {
+                        if(ch >= 0 && ch <= 32) {
+                            sources[index] = ch;
+                        } else {
+                            sources[index] = index;
+                        }
+                        config += n;
+                        index++;
+                        if (config[0]== ',' || config[0]== '-') /* "-" for PowerShell, may have problems with "," */
+                            config++;
+                        else if (config[0] != '\0')
+                            break;
+                    };
                     break;
                 }
                 default:
@@ -296,6 +326,11 @@ static int add_filename(txtp_header * txtp, char *filename) {
 
         strcpy(txtp->entry[txtp->entry_count].filename, filename);
         txtp->entry[txtp->entry_count].channel_mask = channel_mask;
+        txtp->entry[txtp->entry_count].set_sources = set_sources;
+        if(set_sources)
+            for(int i=0; i < 32; i++) 
+                txtp->entry[txtp->entry_count].channel_sources[i] = sources[i];    
+        
         txtp->entry[txtp->entry_count].subsong = (i+1);
         txtp->entry_count++;
     }
