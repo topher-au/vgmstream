@@ -213,45 +213,53 @@ static int add_filename(txtp_header * txtp, char *filename) {
             config[0] = '\0';
             config++;
 
+            switch(config[0]) {
+                case 'c':
+                {
+                    /* mask channels */
+                    int n, ch;
 
-            if (config[0] == 'c') {
-                /* mask channels */
-                int n, ch;
+                    config++;
+                    channel_mask = 0;
+                    while (sscanf(config, "%d%n", &ch,&n) == 1) {
+                        if (ch > 0 && ch < 32)
+                            channel_mask |= (1 << (ch-1));
+                        config += n;
+                        if (config[0]== ',' || config[0]== '-') /* "-" for PowerShell, may have problems with "," */
+                            config++;
+                        else if (config[0] != '\0')
+                            break;
+                    };
+                    break;
+                }
+                case 'd':
+                {
+                    /* duplicate channels */
+                    break;
+                }
+                default:
+                {
+                    /* subsong range */
+                    int subsong_start = 0, subsong_end = 0;
 
-                config++;
-                channel_mask = 0;
-                while (sscanf(config, "%d%n", &ch,&n) == 1) {
-                    if (ch > 0 && ch < 32)
-                        channel_mask |= (1 << (ch-1));
-
-                    config += n;
-                    if (config[0]== ',' || config[0]== '-') /* "-" for PowerShell, may have problems with "," */
-                        config++;
-                    else if (config[0] != '\0')
-                        break;
-                };
-            }
-            else {
-                /* subsong range */
-                int subsong_start = 0, subsong_end = 0;
-
-                if (sscanf(config, "%d~%d", &subsong_start, &subsong_end) == 2) {
-                    if (subsong_start > 0 && subsong_end > 0) {
-                        range_start = subsong_start-1;
-                        range_end = subsong_end;
+                    if (sscanf(config, "%d~%d", &subsong_start, &subsong_end) == 2) {
+                        if (subsong_start > 0 && subsong_end > 0) {
+                            range_start = subsong_start-1;
+                            range_end = subsong_end;
+                        }
                     }
-                }
-                else if (sscanf(config, "%u", &subsong_start) == 1) {
-                    if (subsong_start > 0) {
-                        range_start = subsong_start-1;
-                        range_end = subsong_start;
+                    else if (sscanf(config, "%u", &subsong_start) == 1) {
+                        if (subsong_start > 0) {
+                            range_start = subsong_start-1;
+                            range_end = subsong_start;
+                        }
                     }
-                }
-                else {
-                    config = NULL; /* wrong config, ignore */
+                    else {
+                        config = NULL; /* wrong config, ignore */
+                    }
+                    break;
                 }
             }
-
         } while (config != NULL);
 
         //;VGM_LOG("TXTP: config: range %i~%i, mask=%x\n", range_start, range_end, channel_mask);
